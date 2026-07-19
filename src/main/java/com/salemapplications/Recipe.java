@@ -52,7 +52,7 @@ public class Recipe {
         return instructions;
     }
 
-    public void setRecipe(String instructions) {
+    public void setInstructions(String instructions) {
         this.instructions = instructions;
     }
 

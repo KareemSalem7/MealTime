@@ -1,5 +1,7 @@
 package com.salemapplications;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,12 +24,34 @@ public class RecipeController {
     }
 
     @GetMapping("{id}")
-    public Recipe getRecipeById(@PathVariable Integer id) {
-        return recipeService.getRecipeById(id);
+    public ResponseEntity<?> getRecipeById(@PathVariable Integer id) {
+        Recipe recipe = recipeService.getRecipeById(id);
+
+        if (recipe == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Recipe not found");
+        }
+
+        return ResponseEntity.ok(recipe);
     }
 
     @PostMapping("")
     public void addRecipe(@RequestBody Recipe recipe) {
         recipeService.addRecipe(recipe);
+    }
+
+    @PutMapping("{id}")
+    public ResponseEntity<?> updateRecipe(@PathVariable Integer id, @RequestBody Recipe recipe) {
+        Recipe updatedRecipe = recipeService.updateRecipe(id, recipe);
+
+        if (updatedRecipe == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Recipe not found");
+        }
+
+        return ResponseEntity.ok(updatedRecipe);
+    }
+
+    @DeleteMapping("{id}")
+    public String deleteRecipe(@PathVariable Integer id) {
+        return recipeService.deleteRecipeById(id);
     }
 }

@@ -25,6 +25,35 @@ public class RecipeService {
     }
 
     public Recipe getRecipeById(Integer id) {
-        return recipeRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Id: " + id + " Recipe not found"));
+        if (!recipeRepository.existsById(id)) {
+            return null;
+        }
+
+        return recipeRepository.findById(id).get();
+    }
+
+    public Recipe updateRecipe(Integer id, Recipe updatedRecipe) {
+        if (!recipeRepository.existsById(id)) {
+            return null;
+        }
+
+        Recipe existingRecipe = getRecipeById(id);
+
+        existingRecipe.setName(updatedRecipe.getName());
+        existingRecipe.setInstructions(updatedRecipe.getInstructions());
+        existingRecipe.setTimeToCompleteMinutes(updatedRecipe.getTimeToCompleteMinutes());
+        existingRecipe.setIngredients(updatedRecipe.getIngredients());
+
+        return recipeRepository.save(existingRecipe);
+    }
+
+    public String deleteRecipeById(Integer id) {
+        // first check if the recipe exists
+        if (!recipeRepository.existsById(id)) {
+            return "Recipe not found";
+        }
+
+        recipeRepository.deleteById(id);
+        return "Recipe with id: " + id + " deleted";
     }
 }
