@@ -1,53 +1,32 @@
 services:
-  db:
-    container_name: postgres-spring-boot
-    image: postgres:latest
+  database:
+    image: postgres:16
     environment:
-      POSTGRES_USER: salemApplications
+      POSTGRES_DB: mealtime
+      POSTGRES_USER: mealtime
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: salemDB
-      PGDATA: /data/postgres
-    volumes:
-      - db:/data/postgres
     ports:
-      - "5332:5432"
-    networks:
-      - db
-    restart: unless-stopped
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mealtime -d mealtime"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-networks:
-  db:
-    driver: bridge
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/mealtime
+      SPRING_DATASOURCE_USERNAME: mealtime
+      SPRING_DATASOURCE_PASSWORD: password
+    depends_on:
+      database:
+        condition: service_healthy
 
 volumes:
-  db:
-
-
-
-
-
-
-
-
-#services:
-#  db:
-#    container_name: postgres-spring-boot
-#    image: postgres:latest
-#    environment:
-#      POSTGRES_USER: salemApplications
-#      POSTGRES_PASSWORD: password
-#      PGDATA: /data/postgres
-#    volumes:
-#      - db:/data/postgres
-#    ports:
-#      - "5332:5432"
-#    networks:
-#      - db
-#    restart: unless-stopped
-#
-#networks:
-#  db:
-#    driver: bridge
-#
-#volumes:
-#  db:
+  postgres-data:

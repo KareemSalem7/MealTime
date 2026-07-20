@@ -9,7 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.salemApplications</groupId>
-    <artifactId>spring-boot</artifactId>
+    <artifactId>MealTime</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>spring-boot</name>
     <description>spring-boot</description>
