@@ -1,7 +1,8 @@
 package com.salemapplications;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -17,7 +18,7 @@ import java.util.Objects;
 @Table(name = "recipeingredient")
 public class RecipeIngredient {
     @EmbeddedId
-    @JsonUnwrapped
+    @JsonIgnore
     private RecipeIngredientId id = new RecipeIngredientId();
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -52,18 +53,22 @@ public class RecipeIngredient {
         this.id = id == null ? new RecipeIngredientId() : id;
     }
 
+    @JsonProperty("recipeId")
     public Integer getRecipeId() {
         return id.getRecipeId();
     }
 
+    @JsonAlias("recipe_id")
     public void setRecipeId(Integer recipeId) {
         id.setRecipeId(recipeId);
     }
 
+    @JsonProperty("ingredientId")
     public Integer getIngredientId() {
         return id.getIngredientId();
     }
 
+    @JsonAlias("ingredient_id")
     public void setIngredientId(Integer ingredientId) {
         id.setIngredientId(ingredientId);
     }

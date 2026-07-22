@@ -68,8 +68,18 @@ public class RecipeService {
         }
 
         for (RecipeIngredient recipeIngredient : recipeIngredients) {
-            if (recipeIngredient.getIngredient() == null && recipeIngredient.getIngredientId() != null) {
-                recipeIngredient.setIngredient(ingredientRepository.getReferenceById(recipeIngredient.getIngredientId()));
+            Integer ingredientId = recipeIngredient.getIngredientId();
+
+            if (ingredientId == null && recipeIngredient.getIngredient() != null) {
+                ingredientId = recipeIngredient.getIngredient().getId();
+            }
+
+            if (ingredientId == null) {
+                throw new IllegalArgumentException("Recipe ingredients must include ingredientId");
+            }
+
+            if (recipeIngredient.getIngredient() == null) {
+                recipeIngredient.setIngredient(ingredientRepository.getReferenceById(ingredientId));
             }
         }
     }
