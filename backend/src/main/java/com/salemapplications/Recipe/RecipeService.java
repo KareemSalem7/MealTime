@@ -1,6 +1,8 @@
 package com.salemapplications.Recipe;
 
 import com.salemapplications.Ingredient.IngredientRepository;
+import com.salemapplications.MacroCalculator;
+import com.salemapplications.Macros;
 import com.salemapplications.RecipeIngredient.RecipeIngredient;
 import org.springframework.stereotype.Service;
 
@@ -11,10 +13,16 @@ public class RecipeService {
 
     private final RecipeRepository recipeRepository;
     private final IngredientRepository ingredientRepository;
+    private final MacroCalculator macroCalculator;
 
-    public RecipeService(RecipeRepository recipeRepository, IngredientRepository ingredientRepository) {
+    public RecipeService(
+            RecipeRepository recipeRepository,
+            IngredientRepository ingredientRepository,
+            MacroCalculator macroCalculator
+    ) {
         this.recipeRepository = recipeRepository;
         this.ingredientRepository = ingredientRepository;
+        this.macroCalculator = macroCalculator;
     }
 
     // basically gets all recipe objects and returns them in a list
@@ -85,4 +93,15 @@ public class RecipeService {
             }
         }
     }
+
+    // calculate macros depends on an interface which can be implemented by different classes
+    // to change implementation without changing this class (Open-closed principle)
+    public Macros calculateMacros(Integer recipeId) {
+        Recipe recipe = recipeRepository.findById(recipeId)
+                .orElseThrow(() ->
+                        new RecipeNotFoundException(recipeId));
+
+        return macroCalculator.calculate(recipe);
+    }
+
 }
