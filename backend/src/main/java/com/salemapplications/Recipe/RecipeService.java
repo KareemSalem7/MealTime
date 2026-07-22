@@ -1,5 +1,7 @@
-package com.salemapplications;
+package com.salemapplications.Recipe;
 
+import com.salemapplications.Ingredient.IngredientRepository;
+import com.salemapplications.RecipeIngredient.RecipeIngredient;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

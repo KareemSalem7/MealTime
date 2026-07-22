@@ -1,4 +1,4 @@
-package com.salemapplications;
+package com.salemapplications.Ingredient;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

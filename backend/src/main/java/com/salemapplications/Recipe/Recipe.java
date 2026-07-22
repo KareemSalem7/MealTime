@@ -1,5 +1,6 @@
-package com.salemapplications;
+package com.salemapplications.Recipe;
 
+import com.salemapplications.RecipeIngredient.RecipeIngredient;
 import jakarta.persistence.Entity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.GeneratedValue;

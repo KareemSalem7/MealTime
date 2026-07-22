@@ -1,5 +1,9 @@
-package com.salemapplications;
+package com.salemapplications.RecipeIngredient;
 
+import com.salemapplications.Ingredient.Ingredient;
+import com.salemapplications.Ingredient.IngredientRepository;
+import com.salemapplications.Recipe.Recipe;
+import com.salemapplications.Recipe.RecipeRepository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -1,4 +1,4 @@
-package com.salemapplications;
+package com.salemapplications.Recipe;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

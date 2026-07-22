@@ -1,4 +1,4 @@
-package com.salemapplications;
+package com.salemapplications.RecipeIngredient;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;

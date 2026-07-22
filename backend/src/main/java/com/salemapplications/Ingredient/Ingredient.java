@@ -1,6 +1,7 @@
-package com.salemapplications;
+package com.salemapplications.Ingredient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.salemapplications.RecipeIngredient.RecipeIngredient;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
