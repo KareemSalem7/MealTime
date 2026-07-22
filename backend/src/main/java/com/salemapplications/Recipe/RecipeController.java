@@ -19,19 +19,13 @@ public class RecipeController {
     // Get method for getting the list of recipes
     // now we return the list using our service, which queries from the database
     @GetMapping("")
-    public List<Recipe> getRecipes() {
-        return recipeService.getRecipes();
+    public List<RecipeResponse> getRecipes() {
+        return recipeService.getRecipesWithMacros();
     }
 
     @GetMapping("{id}")
     public ResponseEntity<?> getRecipeById(@PathVariable Integer id) {
-        Recipe recipe = recipeService.getRecipeById(id);
-
-        if (recipe == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Recipe not found");
-        }
-
-        return ResponseEntity.ok(recipe);
+        return ResponseEntity.ok(recipeService.getRecipeWithMacrosById(id));
     }
 
     @PostMapping("")

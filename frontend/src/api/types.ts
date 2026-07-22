@@ -20,10 +20,19 @@ export type RecipeIngredient = {
   unit: string;
 };
 
+export type Macros = {
+  calories: number;
+  protein: number;
+  carbohydrates: number;
+  fat: number;
+  fibre: number;
+};
+
 export type Recipe = {
   id: number;
   name: string;
   instructions: string;
   timeToCompleteMinutes: number;
   ingredients: RecipeIngredient[] | null;
+  macros?: Macros;
 };

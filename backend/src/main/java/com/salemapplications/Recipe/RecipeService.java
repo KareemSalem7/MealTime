@@ -31,6 +31,12 @@ public class RecipeService {
         return recipeRepository.findAll();
     }
 
+    public List<RecipeResponse> getRecipesWithMacros() {
+        return recipeRepository.findAll().stream()
+                .map(recipe -> new RecipeResponse(recipe, macroCalculator.calculate(recipe)))
+                .toList();
+    }
+
     // the .save method adds the recipe object to the database
     public void addRecipe(Recipe recipe) {
         hydrateRecipeIngredients(recipe.getIngredients());
@@ -44,6 +50,13 @@ public class RecipeService {
         }
 
         return recipeRepository.findById(id).get();
+    }
+
+    public RecipeResponse getRecipeWithMacrosById(Integer id) {
+        Recipe recipe = recipeRepository.findById(id)
+                .orElseThrow(() -> new RecipeNotFoundException(id));
+
+        return new RecipeResponse(recipe, macroCalculator.calculate(recipe));
     }
 
     public Recipe updateRecipe(Integer id, Recipe updatedRecipe) {

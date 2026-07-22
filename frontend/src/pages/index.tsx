@@ -1,78 +1,137 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
+import { useEffect, useState } from "react";
+import { getRecipes } from "../api/api-client";
+import type { Macros, Recipe, RecipeIngredient } from "../api/types";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+function getIngredientName(recipeIngredient: RecipeIngredient) {
+  return recipeIngredient.name ?? recipeIngredient.ingredient?.name ?? `Ingredient ${recipeIngredient.ingredientId}`;
+}
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+function formatMacro(value: number) {
+  return Math.round(value * 10) / 10;
+}
+
+function calculateFallbackMacros(recipe: Recipe): Macros | null {
+  if (!recipe.ingredients || recipe.ingredients.length === 0) {
+    return null;
+  }
+
+  return recipe.ingredients.reduce<Macros>(
+    (totals, recipeIngredient) => {
+      const ingredient = recipeIngredient.ingredient;
+
+      if (!ingredient || ingredient.amount === 0) {
+        return totals;
+      }
+
+      const ratio = recipeIngredient.amount / ingredient.amount;
+
+      return {
+        calories: totals.calories + ingredient.calories * ratio,
+        protein: totals.protein + ingredient.protein * ratio,
+        carbohydrates: totals.carbohydrates + ingredient.carbohydrates * ratio,
+        fat: totals.fat + ingredient.fat * ratio,
+        fibre: totals.fibre + ingredient.fibre * ratio,
+      };
+    },
+    { calories: 0, protein: 0, carbohydrates: 0, fat: 0, fibre: 0 },
+  );
+}
+
+function MacroSummary({ recipe }: { recipe: Recipe }) {
+  const macros = recipe.macros ?? calculateFallbackMacros(recipe);
+
+  if (!macros) {
+    return null;
+  }
+
+  const items = [
+    ["Calories", formatMacro(macros.calories)],
+    ["Protein", `${formatMacro(macros.protein)}g`],
+    ["Carbs", `${formatMacro(macros.carbohydrates)}g`],
+    ["Fat", `${formatMacro(macros.fat)}g`],
+    ["Fibre", `${formatMacro(macros.fibre)}g`],
+  ];
+
+  return (
+    <dl className="mt-4 grid grid-cols-2 gap-3 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm sm:grid-cols-5">
+      {items.map(([label, value]) => (
+        <div key={label}>
+          <dt className="text-xs font-medium uppercase text-gray-500">{label}</dt>
+          <dd className="mt-1 font-semibold text-gray-950">{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
 export default function Home() {
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadRecipes() {
+      try {
+        const nextRecipes = await getRecipes();
+        setRecipes(nextRecipes);
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : "Failed to fetch recipes");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadRecipes();
+  }, []);
+
+  if (isLoading) {
+    return <main className="mx-auto max-w-3xl px-6 py-10">Loading recipes...</main>;
+  }
+
+  if (error) {
+    return <main className="mx-auto max-w-3xl px-6 py-10">Could not load recipes: {error}</main>;
+  }
+
   return (
-    <div
-      className={`${geistSans.className} ${geistMono.className} flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black`}
-    >
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the index.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs/pages/getting-started?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="mx-auto max-w-3xl px-6 py-10">
+      <header className="mb-8 border-b border-gray-200 pb-4">
+        <h1 className="text-3xl font-semibold text-gray-950">Recipes</h1>
+        <p className="mt-2 text-sm text-gray-600">{recipes.length} saved recipes</p>
+      </header>
+
+      {recipes.length === 0 ? (
+        <p className="text-gray-600">No recipes found.</p>
+      ) : (
+        <ul className="space-y-5">
+          {recipes.map((recipe) => (
+            <li key={recipe.id} className="border-b border-gray-200 pb-5 last:border-b-0">
+              <div className="flex items-start justify-between gap-4">
+                <h2 className="text-xl font-medium text-gray-950">{recipe.name}</h2>
+                <span className="shrink-0 text-sm text-gray-500">
+                  {recipe.timeToCompleteMinutes} min
+                </span>
+              </div>
+
+              <p className="mt-2 text-gray-700">{recipe.instructions}</p>
+
+              <MacroSummary recipe={recipe} />
+
+              {recipe.ingredients && recipe.ingredients.length > 0 ? (
+                <ul className="mt-3 space-y-1 text-sm text-gray-700">
+                  {recipe.ingredients.map((recipeIngredient) => (
+                    <li key={`${recipe.id}-${recipeIngredient.ingredientId}`} className="flex gap-2">
+                      <span className="font-medium text-gray-950">
+                        {recipeIngredient.amount} {recipeIngredient.unit}
+                      </span>
+                      <span>{getIngredientName(recipeIngredient)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+    </main>
   );
 }
