@@ -7,6 +7,7 @@ import jakarta.persistence.Id;
 
 import java.util.Objects;
 
+// ingredient here refers to an ingredient object for a specific recipe
 @Entity
 public class Ingredient {
     @Id
