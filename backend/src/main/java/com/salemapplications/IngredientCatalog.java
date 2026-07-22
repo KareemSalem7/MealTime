@@ -7,6 +7,7 @@ import jakarta.persistence.Table;
 import java.util.Objects;
 
 // ingredient catalog refers to the table of ingredients available (ingredient_catalogue)
+// this just is used to have the pure information of ingredients and their macros at their amounts
 @Entity
 @Table(name = "ingredient_catalog")
 public class IngredientCatalog {

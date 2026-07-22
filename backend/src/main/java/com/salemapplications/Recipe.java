@@ -21,7 +21,10 @@ public class Recipe {
     private String name;
     private String instructions;
     private int timeToCompleteMinutes;
+    // one recipe has many ingredients (at varying quantities)
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    // connect each ingredient row to its recipe using the recipe_id column on the ingredient table
+    // essentially the JPA uses this to link recipes to ingredients belonging in them
     @JoinColumn(name = "recipe_id")
     private List<Ingredient> ingredients = new ArrayList<>();
 

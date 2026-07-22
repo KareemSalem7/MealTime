@@ -7,7 +7,9 @@ import jakarta.persistence.Id;
 
 import java.util.Objects;
 
-// ingredient here refers to an ingredient object for a specific recipe
+// ingredient here refers to an actual ingredient object that belongs to a specific recipe
+// each ingredient object belongs to one recipe (since it will have a specific amount
+// which is accurate to that recipe), and recipe's have many ingredients so it's one-to-many
 @Entity
 public class Ingredient {
     @Id
