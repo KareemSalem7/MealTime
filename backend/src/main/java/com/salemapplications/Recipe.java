@@ -1,11 +1,14 @@
 package com.salemapplications;
 
 import jakarta.persistence.Entity;
-import jakarta.persistence.ElementCollection;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -17,10 +20,10 @@ public class Recipe {
 
     private String name;
     private String instructions;
-//    private Macros macros;
     private int timeToCompleteMinutes;
-    @ElementCollection
-    private List<Ingredient> ingredients;
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "recipe_id")
+    private List<Ingredient> ingredients = new ArrayList<>();
 
     public Recipe() {
     }
@@ -28,7 +31,6 @@ public class Recipe {
     public Recipe(String name, String instructions, int timeToCompleteMinutes) {
         this.name = name;
         this.instructions = instructions;
-//        this.macros = macros;
         this.timeToCompleteMinutes = timeToCompleteMinutes;
     }
 
@@ -69,7 +71,11 @@ public class Recipe {
     }
 
     public void setIngredients(List<Ingredient> ingredients) {
-        this.ingredients = ingredients;
+        this.ingredients.clear();
+
+        if (ingredients != null) {
+            this.ingredients.addAll(ingredients);
+        }
     }
 
     @Override
