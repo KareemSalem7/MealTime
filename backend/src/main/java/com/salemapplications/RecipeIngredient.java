@@ -1,6 +1,5 @@
 package com.salemapplications;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.EmbeddedId;
@@ -58,7 +57,6 @@ public class RecipeIngredient {
         return id.getRecipeId();
     }
 
-    @JsonAlias("recipe_id")
     public void setRecipeId(Integer recipeId) {
         id.setRecipeId(recipeId);
     }
@@ -68,7 +66,6 @@ public class RecipeIngredient {
         return id.getIngredientId();
     }
 
-    @JsonAlias("ingredient_id")
     public void setIngredientId(Integer ingredientId) {
         id.setIngredientId(ingredientId);
     }
