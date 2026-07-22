@@ -1,37 +1,41 @@
 package com.salemapplications;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
-// ingredient here refers to an actual ingredient object that belongs to a specific recipe
-// each ingredient object belongs to one recipe (since it will have a specific amount
-// which is accurate to that recipe), and recipe's have many ingredients so it's one-to-many
+// ingredient refers to reusable ingredient information that can appear in many recipes
 @Entity
+@Table(name = "ingredient")
 public class Ingredient {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     private String name;
     private double amount;
     private String unit;
     private String category;
-
-    // the macros of the ingredient at this amount and unit
     private double calories;
     private double protein;
     private double fat;
     private double carbohydrates;
     private double fibre;
 
+    @OneToMany(mappedBy = "ingredient")
+    @JsonIgnore
+    private List<RecipeIngredient> recipeIngredients = new ArrayList<>();
+
     public Ingredient() {
     }
 
-    public Ingredient(String name, double amount, String unit, String category, double calories, double protein, double fat, double carbohydrates, double fibre) {
+    public Ingredient(Integer id, String name, double amount, String unit, String category, double calories, double protein, double fat, double carbohydrates, double fibre) {
+        this.id = id;
         this.name = name;
         this.amount = amount;
         this.unit = unit;
@@ -119,17 +123,17 @@ public class Ingredient {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Ingredient that = (Ingredient) o;
-        return Double.compare(amount, that.amount) == 0 && Double.compare(calories, that.calories) == 0 && Double.compare(protein, that.protein) == 0 && Double.compare(fat, that.fat) == 0 && Double.compare(carbohydrates, that.carbohydrates) == 0 && Double.compare(fibre, that.fibre) == 0 && Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(unit, that.unit);
+        return Double.compare(amount, that.amount) == 0 && Double.compare(calories, that.calories) == 0 && Double.compare(protein, that.protein) == 0 && Double.compare(fat, that.fat) == 0 && Double.compare(carbohydrates, that.carbohydrates) == 0 && Double.compare(fibre, that.fibre) == 0 && Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(unit, that.unit) && Objects.equals(category, that.category);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, amount, unit, calories, protein, fat, carbohydrates, fibre);
+        return Objects.hash(id, name, amount, unit, category, calories, protein, fat, carbohydrates, fibre);
     }
 
     @Override
     public String toString() {
-        return amount + " " + unit + " " + name;
+        return name;
     }
 
     public String getCategory() {
@@ -138,5 +142,13 @@ public class Ingredient {
 
     public void setCategory(String category) {
         this.category = category;
+    }
+
+    public List<RecipeIngredient> getRecipeIngredients() {
+        return recipeIngredients;
+    }
+
+    public void setRecipeIngredients(List<RecipeIngredient> recipeIngredients) {
+        this.recipeIngredients = recipeIngredients == null ? new ArrayList<>() : recipeIngredients;
     }
 }

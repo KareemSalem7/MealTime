@@ -8,9 +8,11 @@ import java.util.List;
 public class RecipeService {
 
     private final RecipeRepository recipeRepository;
+    private final IngredientRepository ingredientRepository;
 
-    public RecipeService(RecipeRepository recipeRepository) {
+    public RecipeService(RecipeRepository recipeRepository, IngredientRepository ingredientRepository) {
         this.recipeRepository = recipeRepository;
+        this.ingredientRepository = ingredientRepository;
     }
 
     // basically gets all recipe objects and returns them in a list
@@ -21,6 +23,8 @@ public class RecipeService {
 
     // the .save method adds the recipe object to the database
     public void addRecipe(Recipe recipe) {
+        hydrateRecipeIngredients(recipe.getIngredients());
+        recipe.setIngredients(recipe.getIngredients());
         recipeRepository.save(recipe);
     }
 
@@ -42,6 +46,7 @@ public class RecipeService {
         existingRecipe.setName(updatedRecipe.getName());
         existingRecipe.setInstructions(updatedRecipe.getInstructions());
         existingRecipe.setTimeToCompleteMinutes(updatedRecipe.getTimeToCompleteMinutes());
+        hydrateRecipeIngredients(updatedRecipe.getIngredients());
         existingRecipe.setIngredients(updatedRecipe.getIngredients());
 
         return recipeRepository.save(existingRecipe);
@@ -55,5 +60,17 @@ public class RecipeService {
 
         recipeRepository.deleteById(id);
         return "Recipe with id: " + id + " deleted";
+    }
+
+    private void hydrateRecipeIngredients(List<RecipeIngredient> recipeIngredients) {
+        if (recipeIngredients == null) {
+            return;
+        }
+
+        for (RecipeIngredient recipeIngredient : recipeIngredients) {
+            if (recipeIngredient.getIngredient() == null && recipeIngredient.getIngredientId() != null) {
+                recipeIngredient.setIngredient(ingredientRepository.getReferenceById(recipeIngredient.getIngredientId()));
+            }
+        }
     }
 }

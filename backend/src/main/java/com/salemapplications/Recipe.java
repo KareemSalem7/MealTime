@@ -5,14 +5,15 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 @Entity
+@Table(name = "recipe")
 public class Recipe {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,12 +22,9 @@ public class Recipe {
     private String name;
     private String instructions;
     private int timeToCompleteMinutes;
-    // one recipe has many ingredients (at varying quantities)
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    // connect each ingredient row to its recipe using the recipe_id column on the ingredient table
-    // essentially the JPA uses this to link recipes to ingredients belonging in them
-    @JoinColumn(name = "recipe_id")
-    private List<Ingredient> ingredients = new ArrayList<>();
+    // one recipe has many ingredient mappings (at varying quantities)
+    @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RecipeIngredient> ingredients = new ArrayList<>();
 
     public Recipe() {
     }
@@ -69,15 +67,23 @@ public class Recipe {
         this.timeToCompleteMinutes = timeToCompleteMinutes;
     }
 
-    public List<Ingredient> getIngredients() {
+    public List<RecipeIngredient> getIngredients() {
         return ingredients;
     }
 
-    public void setIngredients(List<Ingredient> ingredients) {
-        this.ingredients.clear();
+    public void setIngredients(List<RecipeIngredient> ingredients) {
+        List<RecipeIngredient> nextIngredients = ingredients == null
+                ? List.of()
+                : new ArrayList<>(ingredients);
 
-        if (ingredients != null) {
-            this.ingredients.addAll(ingredients);
+        this.ingredients.clear();
+        nextIngredients.forEach(this::addIngredient);
+    }
+
+    public void addIngredient(RecipeIngredient ingredient) {
+        if (ingredient != null) {
+            ingredient.setRecipe(this);
+            this.ingredients.add(ingredient);
         }
     }
 
@@ -98,7 +104,7 @@ public class Recipe {
         List<String> ingredientStrings = ingredients == null
                 ? List.of()
                 : ingredients.stream()
-                        .map(Ingredient::toString)
+                        .map(RecipeIngredient::toString)
                         .toList();
 
         return "Recipe{" +
