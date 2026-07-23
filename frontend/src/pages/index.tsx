@@ -1,6 +1,19 @@
 import { useEffect, useState } from "react";
-import { getRecipes } from "../api/api-client";
-import { MacroMode, type Macros, type Recipe, type RecipeIngredient } from "../api/types";
+import { createRecipe, deleteRecipe, getIngredients, getRecipes } from "../api/api-client";
+import { MacroMode, type Ingredient, type Macros, type Recipe, type RecipeIngredient } from "../api/types";
+import { getUnitForIngredientId } from "../constants/ingredients";
+
+type IngredientRow = {
+  ingredientId: string;
+  amount: string;
+  unit: string;
+};
+
+const emptyIngredientRow = (): IngredientRow => ({
+  ingredientId: "",
+  amount: "",
+  unit: "",
+});
 
 function getIngredientName(recipeIngredient: RecipeIngredient) {
   return recipeIngredient.name ?? recipeIngredient.ingredient?.name ?? `Ingredient ${recipeIngredient.ingredientId}`;
@@ -78,58 +91,277 @@ function MacroSummary({ recipe, macroMode }: { recipe: Recipe; macroMode: MacroM
   );
 }
 
+function RecipeForm({
+  ingredients,
+  onCreated,
+}: {
+  ingredients: Ingredient[];
+  onCreated: () => Promise<void>;
+}) {
+  const [name, setName] = useState("");
+  const [instructions, setInstructions] = useState("");
+  const [timeToCompleteMinutes, setTimeToCompleteMinutes] = useState("");
+  const [servings, setServings] = useState("1");
+  const [ingredientRows, setIngredientRows] = useState<IngredientRow[]>([emptyIngredientRow()]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  function updateIngredientRow(index: number, nextRow: Partial<IngredientRow>) {
+    setIngredientRows((rows) => rows.map((row, rowIndex) => (rowIndex === index ? { ...row, ...nextRow } : row)));
+  }
+
+  function removeIngredientRow(index: number) {
+    setIngredientRows((rows) => (rows.length === 1 ? [emptyIngredientRow()] : rows.filter((_, rowIndex) => rowIndex !== index)));
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFormError(null);
+
+    const recipeIngredients = ingredientRows
+      .filter((row) => row.ingredientId && row.amount)
+      .map((row) => ({
+        ingredientId: Number(row.ingredientId),
+        amount: Number(row.amount),
+        unit: getUnitForIngredientId(Number(row.ingredientId)),
+      }));
+
+    if (!name.trim() || !instructions.trim()) {
+      setFormError("Name and instructions are required.");
+      return;
+    }
+
+    if (recipeIngredients.length === 0) {
+      setFormError("Add at least one ingredient.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await createRecipe({
+        name: name.trim(),
+        instructions: instructions.trim(),
+        timeToCompleteMinutes: Number(timeToCompleteMinutes) || 0,
+        servings: Number(servings) || 1,
+        ingredients: recipeIngredients,
+      });
+      setName("");
+      setInstructions("");
+      setTimeToCompleteMinutes("");
+      setServings("1");
+      setIngredientRows([emptyIngredientRow()]);
+      await onCreated();
+    } catch (createError) {
+      setFormError(createError instanceof Error ? createError.message : "Failed to create recipe.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <div>
+        <h2 className="text-lg font-semibold text-slate-950">Create recipe</h2>
+        <p className="mt-1 text-sm text-slate-600">Add recipe details and choose ingredients from the ingredient table.</p>
+      </div>
+
+      <div className="mt-4 space-y-4">
+        <label className="block text-sm font-medium text-slate-700">
+          Name
+          <input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-950 outline-none focus:border-emerald-600"
+            placeholder="Chicken rice bowl"
+          />
+        </label>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block text-sm font-medium text-slate-700">
+            Time, minutes
+            <input
+              type="number"
+              min="0"
+              value={timeToCompleteMinutes}
+              onChange={(event) => setTimeToCompleteMinutes(event.target.value)}
+              className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-950 outline-none focus:border-emerald-600"
+            />
+          </label>
+          <label className="block text-sm font-medium text-slate-700">
+            Servings
+            <input
+              type="number"
+              min="1"
+              value={servings}
+              onChange={(event) => setServings(event.target.value)}
+              className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-950 outline-none focus:border-emerald-600"
+            />
+          </label>
+        </div>
+
+        <label className="block text-sm font-medium text-slate-700">
+          Instructions
+          <textarea
+            value={instructions}
+            onChange={(event) => setInstructions(event.target.value)}
+            className="mt-1 min-h-28 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-950 outline-none focus:border-emerald-600"
+            placeholder="Cook, combine, season, and serve."
+          />
+        </label>
+
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold text-slate-800">Ingredients</h3>
+            <button
+              type="button"
+              onClick={() => setIngredientRows((rows) => [...rows, emptyIngredientRow()])}
+              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Add row
+            </button>
+          </div>
+
+          <div className="mt-3 space-y-3">
+            {ingredientRows.map((row, index) => {
+              const selectedIngredient = ingredients.find((ingredient) => ingredient.id === Number(row.ingredientId));
+
+              return (
+                <div key={index} className="grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[minmax(0,1fr)_110px_100px_auto]">
+                  <select
+                    value={row.ingredientId}
+                    onChange={(event) => {
+                      const ingredient = ingredients.find((item) => item.id === Number(event.target.value));
+                      updateIngredientRow(index, {
+                        ingredientId: event.target.value,
+                        unit: ingredient?.id ? getUnitForIngredientId(ingredient.id) : "",
+                      });
+                    }}
+                    className="min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-emerald-600"
+                  >
+                    <option value="">Select ingredient</option>
+                    {ingredients.map((ingredient) => (
+                      <option key={ingredient.id} value={ingredient.id}>
+                        {ingredient.name} ({ingredient.category})
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={row.amount}
+                    onChange={(event) => updateIngredientRow(index, { amount: event.target.value })}
+                    className="min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-emerald-600"
+                    placeholder={selectedIngredient ? String(selectedIngredient.amount) : "Amount"}
+                  />
+                  <div className="min-w-0 rounded-md border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-700">
+                    {selectedIngredient?.id ? getUnitForIngredientId(selectedIngredient.id) : "Unit"}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeIngredientRow(index)}
+                    className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-white"
+                  >
+                    Remove
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {formError ? <p className="mt-3 text-sm font-medium text-red-700">{formError}</p> : null}
+
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="mt-5 w-full rounded-md bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+      >
+        {isSubmitting ? "Creating..." : "Create recipe"}
+      </button>
+    </form>
+  );
+}
+
 export default function Home() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingRecipeId, setDeletingRecipeId] = useState<number | null>(null);
   const [macroMode, setMacroMode] = useState<MacroMode>(MacroMode.Total);
 
+  async function loadRecipes() {
+    const nextRecipes = await getRecipes(macroMode);
+    setRecipes(nextRecipes);
+  }
+
   useEffect(() => {
-    async function loadRecipes() {
+    async function loadPageData() {
       setIsLoading(true);
-      setError(null);
+      setLoadError(null);
 
       try {
-        const nextRecipes = await getRecipes(macroMode);
+        const [nextRecipes, nextIngredients] = await Promise.all([getRecipes(macroMode), getIngredients()]);
         setRecipes(nextRecipes);
+        setIngredients(nextIngredients);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Failed to fetch recipes");
+        setLoadError(loadError instanceof Error ? loadError.message : "Failed to load page data");
       } finally {
         setIsLoading(false);
       }
     }
 
-    loadRecipes();
+    loadPageData();
   }, [macroMode]);
 
-  if (isLoading) {
-    return <main className="mx-auto max-w-3xl px-6 py-10">Loading recipes...</main>;
+  async function handleDeleteRecipe(recipeId: number) {
+    setDeletingRecipeId(recipeId);
+    setActionError(null);
+
+    try {
+      await deleteRecipe(recipeId);
+      setRecipes((currentRecipes) => currentRecipes.filter((recipe) => recipe.id !== recipeId));
+    } catch (deleteError) {
+      setActionError(deleteError instanceof Error ? deleteError.message : "Failed to delete recipe.");
+    } finally {
+      setDeletingRecipeId(null);
+    }
   }
 
-  if (error) {
-    return <main className="mx-auto max-w-3xl px-6 py-10">Could not load recipes: {error}</main>;
+  if (isLoading) {
+    return <main className="mx-auto max-w-5xl px-6 py-10 text-slate-700">Loading recipes...</main>;
+  }
+
+  if (loadError) {
+    return <main className="mx-auto max-w-5xl px-6 py-10 text-red-700">Could not load recipes: {loadError}</main>;
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
+    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <header className="mb-8 border-b border-gray-200 pb-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold text-gray-950">Recipes</h1>
-            <p className="mt-2 text-sm text-gray-600">{recipes.length} saved recipes</p>
+            <h1 className="text-3xl font-semibold text-slate-950">Recipes</h1>
+            <p className="mt-2 text-sm text-slate-600">
+              {recipes.length} saved recipes, {ingredients.length} ingredients available
+            </p>
           </div>
 
           <div className="inline-flex rounded-md border border-gray-300 bg-white p-1 text-sm font-medium">
             <button
               type="button"
-              className={`rounded px-3 py-1.5 ${macroMode === MacroMode.Total ? "bg-gray-950 text-white" : "text-gray-600"}`}
+              className={`rounded px-3 py-1.5 ${macroMode === MacroMode.Total ? "bg-slate-950 text-white" : "text-slate-600"}`}
               onClick={() => setMacroMode(MacroMode.Total)}
             >
               Total
             </button>
             <button
               type="button"
-              className={`rounded px-3 py-1.5 ${macroMode === MacroMode.PerServing ? "bg-gray-950 text-white" : "text-gray-600"}`}
+              className={`rounded px-3 py-1.5 ${macroMode === MacroMode.PerServing ? "bg-slate-950 text-white" : "text-slate-600"}`}
               onClick={() => setMacroMode(MacroMode.PerServing)}
             >
               Per serving
@@ -138,40 +370,60 @@ export default function Home() {
         </div>
       </header>
 
-      {recipes.length === 0 ? (
-        <p className="text-gray-600">No recipes found.</p>
-      ) : (
-        <ul className="space-y-5">
-          {recipes.map((recipe) => (
-            <li key={recipe.id} className="border-b border-gray-200 pb-5 last:border-b-0">
-              <div className="flex items-start justify-between gap-4">
-                <h2 className="text-xl font-medium text-gray-950">{recipe.name}</h2>
-                <div className="shrink-0 text-right text-sm text-gray-500">
-                  <div>{recipe.timeToCompleteMinutes} min</div>
-                  <div>{recipe.servings} servings</div>
-                </div>
-              </div>
+      <div className="space-y-8">
+        <section className="max-w-4xl">
+          <RecipeForm ingredients={ingredients} onCreated={loadRecipes} />
+        </section>
 
-              <p className="mt-2 text-gray-700">{recipe.instructions}</p>
+        <section>
+          {actionError ? <p className="mb-4 text-sm font-medium text-red-700">{actionError}</p> : null}
 
-              <MacroSummary recipe={recipe} macroMode={macroMode} />
+          {recipes.length === 0 ? (
+            <p className="rounded-md border border-slate-200 bg-white p-4 text-slate-600">No recipes found.</p>
+          ) : (
+            <ul className="space-y-4">
+              {recipes.map((recipe) => (
+                <li key={recipe.id} className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h2 className="text-xl font-medium text-slate-950">{recipe.name}</h2>
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-500">
+                        <span>{recipe.timeToCompleteMinutes} min</span>
+                        <span>{recipe.servings} servings</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteRecipe(recipe.id)}
+                      disabled={deletingRecipeId === recipe.id}
+                      className="shrink-0 rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                    >
+                      {deletingRecipeId === recipe.id ? "Deleting..." : "Delete"}
+                    </button>
+                  </div>
 
-              {recipe.ingredients && recipe.ingredients.length > 0 ? (
-                <ul className="mt-3 space-y-1 text-sm text-gray-700">
-                  {recipe.ingredients.map((recipeIngredient) => (
-                    <li key={`${recipe.id}-${recipeIngredient.ingredientId}`} className="flex gap-2">
-                      <span className="font-medium text-gray-950">
-                        {recipeIngredient.amount} {recipeIngredient.unit}
-                      </span>
-                      <span>{getIngredientName(recipeIngredient)}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
+                  <p className="mt-3 whitespace-pre-line text-slate-700">{recipe.instructions}</p>
+
+                  <MacroSummary recipe={recipe} macroMode={macroMode} />
+
+                  {recipe.ingredients && recipe.ingredients.length > 0 ? (
+                    <ul className="mt-3 space-y-1 text-sm text-slate-700">
+                      {recipe.ingredients.map((recipeIngredient) => (
+                        <li key={`${recipe.id}-${recipeIngredient.ingredientId}`} className="flex gap-2">
+                          <span className="font-medium text-slate-950">
+                            {recipeIngredient.amount} {recipeIngredient.unit}
+                          </span>
+                          <span>{getIngredientName(recipeIngredient)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
     </main>
   );
 }

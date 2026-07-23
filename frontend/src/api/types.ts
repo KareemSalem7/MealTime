@@ -38,6 +38,14 @@ export type Recipe = {
   macros?: Macros;
 };
 
+export type CreateRecipeRequest = {
+  name: string;
+  instructions: string;
+  timeToCompleteMinutes: number;
+  servings: number;
+  ingredients: Pick<RecipeIngredient, "ingredientId" | "amount" | "unit">[];
+};
+
 export const MacroMode = {
   Total: "total",
   PerServing: "perServing",
