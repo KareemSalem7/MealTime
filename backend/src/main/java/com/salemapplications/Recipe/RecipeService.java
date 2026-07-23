@@ -69,6 +69,7 @@ public class RecipeService {
         existingRecipe.setName(updatedRecipe.getName());
         existingRecipe.setInstructions(updatedRecipe.getInstructions());
         existingRecipe.setTimeToCompleteMinutes(updatedRecipe.getTimeToCompleteMinutes());
+        existingRecipe.setServings(updatedRecipe.getServings());
         hydrateRecipeIngredients(updatedRecipe.getIngredients());
         existingRecipe.setIngredients(updatedRecipe.getIngredients());
 

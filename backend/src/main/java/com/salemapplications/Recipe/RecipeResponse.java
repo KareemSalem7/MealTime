@@ -10,6 +10,7 @@ public record RecipeResponse(
         String name,
         String instructions,
         int timeToCompleteMinutes,
+        int servings,
         List<RecipeIngredient> ingredients,
         Macros macros
 ) {
@@ -19,6 +20,7 @@ public record RecipeResponse(
                 recipe.getName(),
                 recipe.getInstructions(),
                 recipe.getTimeToCompleteMinutes(),
+                recipe.getServings(),
                 recipe.getIngredients(),
                 macros
         );

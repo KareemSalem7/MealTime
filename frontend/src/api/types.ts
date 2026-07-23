@@ -33,6 +33,7 @@ export type Recipe = {
   name: string;
   instructions: string;
   timeToCompleteMinutes: number;
+  servings: number;
   ingredients: RecipeIngredient[] | null;
   macros?: Macros;
 };

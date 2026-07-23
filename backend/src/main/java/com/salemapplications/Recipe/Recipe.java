@@ -23,6 +23,7 @@ public class Recipe {
     private String name;
     private String instructions;
     private int timeToCompleteMinutes;
+    private int servings = 1;
     // one recipe has many ingredient mappings (at varying quantities)
     @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RecipeIngredient> ingredients = new ArrayList<>();
@@ -34,6 +35,13 @@ public class Recipe {
         this.name = name;
         this.instructions = instructions;
         this.timeToCompleteMinutes = timeToCompleteMinutes;
+    }
+
+    public Recipe(String name, String instructions, int timeToCompleteMinutes, int servings) {
+        this.name = name;
+        this.instructions = instructions;
+        this.timeToCompleteMinutes = timeToCompleteMinutes;
+        this.servings = servings;
     }
 
     public Integer getId() {
@@ -68,6 +76,14 @@ public class Recipe {
         this.timeToCompleteMinutes = timeToCompleteMinutes;
     }
 
+    public int getServings() {
+        return servings;
+    }
+
+    public void setServings(int servings) {
+        this.servings = servings;
+    }
+
     public List<RecipeIngredient> getIngredients() {
         return ingredients;
     }
@@ -92,12 +108,12 @@ public class Recipe {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Recipe recipe = (Recipe) o;
-        return timeToCompleteMinutes == recipe.timeToCompleteMinutes && Objects.equals(id, recipe.id) && Objects.equals(name, recipe.name) && Objects.equals(instructions, recipe.instructions) && Objects.equals(ingredients, recipe.ingredients);
+        return timeToCompleteMinutes == recipe.timeToCompleteMinutes && servings == recipe.servings && Objects.equals(id, recipe.id) && Objects.equals(name, recipe.name) && Objects.equals(instructions, recipe.instructions) && Objects.equals(ingredients, recipe.ingredients);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, instructions, timeToCompleteMinutes, ingredients);
+        return Objects.hash(id, name, instructions, timeToCompleteMinutes, servings, ingredients);
     }
 
     @Override
@@ -113,6 +129,7 @@ public class Recipe {
                 ", name='" + name + '\'' +
                 ", instructions='" + instructions + '\'' +
                 ", timeToCompleteMinutes=" + timeToCompleteMinutes +
+                ", servings=" + servings +
                 ", ingredients=" + ingredientStrings +
                 '}';
     }

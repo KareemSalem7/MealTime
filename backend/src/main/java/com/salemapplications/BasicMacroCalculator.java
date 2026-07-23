@@ -3,12 +3,16 @@ package com.salemapplications;
 import com.salemapplications.Ingredient.Ingredient;
 import com.salemapplications.Recipe.Recipe;
 import com.salemapplications.RecipeIngredient.RecipeIngredient;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+// we declare this as a @service (similar to @component), so that spring boot
+// injects it as a bean where it's needed in recipeService
+// we use primary to identity this as the bean to be injected over the per serving calculator
 @Service
+@Primary
 public class BasicMacroCalculator implements MacroCalculator {
     @Override
     public Macros calculate(Recipe recipe) {
