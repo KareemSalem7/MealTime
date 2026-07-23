@@ -11,7 +11,7 @@ import java.util.List;
 // we declare this as a @service (similar to @component), so that spring boot
 // injects it as a bean where it's needed in recipeService
 // we use primary to identity this as the bean to be injected over the per serving calculator
-@Service
+@Service("basicMacroCalculator")
 @Primary
 public class BasicMacroCalculator implements MacroCalculator {
     @Override

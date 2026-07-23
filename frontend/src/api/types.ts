@@ -37,3 +37,10 @@ export type Recipe = {
   ingredients: RecipeIngredient[] | null;
   macros?: Macros;
 };
+
+export const MacroMode = {
+  Total: "total",
+  PerServing: "perServing",
+} as const;
+
+export type MacroMode = (typeof MacroMode)[keyof typeof MacroMode];

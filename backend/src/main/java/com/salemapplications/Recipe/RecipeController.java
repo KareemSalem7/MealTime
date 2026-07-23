@@ -19,13 +19,16 @@ public class RecipeController {
     // Get method for getting the list of recipes
     // now we return the list using our service, which queries from the database
     @GetMapping("")
-    public List<RecipeResponse> getRecipes() {
-        return recipeService.getRecipesWithMacros();
+    public List<RecipeResponse> getRecipes(@RequestParam(defaultValue = "false") boolean perServing) {
+        return recipeService.getRecipesWithMacros(perServing);
     }
 
     @GetMapping("{id}")
-    public ResponseEntity<?> getRecipeById(@PathVariable Integer id) {
-        return ResponseEntity.ok(recipeService.getRecipeWithMacrosById(id));
+    public ResponseEntity<?> getRecipeById(
+            @PathVariable Integer id,
+            @RequestParam(defaultValue = "false") boolean perServing
+    ) {
+        return ResponseEntity.ok(recipeService.getRecipeWithMacrosById(id, perServing));
     }
 
     @PostMapping("")

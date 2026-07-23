@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getRecipes } from "../api/api-client";
-import type { Macros, Recipe, RecipeIngredient } from "../api/types";
+import { MacroMode, type Macros, type Recipe, type RecipeIngredient } from "../api/types";
 
 function getIngredientName(recipeIngredient: RecipeIngredient) {
   return recipeIngredient.name ?? recipeIngredient.ingredient?.name ?? `Ingredient ${recipeIngredient.ingredientId}`;
@@ -10,12 +10,12 @@ function formatMacro(value: number) {
   return Math.round(value * 10) / 10;
 }
 
-function calculateFallbackMacros(recipe: Recipe): Macros | null {
+function calculateFallbackMacros(recipe: Recipe, macroMode: MacroMode): Macros | null {
   if (!recipe.ingredients || recipe.ingredients.length === 0) {
     return null;
   }
 
-  return recipe.ingredients.reduce<Macros>(
+  const totals = recipe.ingredients.reduce<Macros>(
     (totals, recipeIngredient) => {
       const ingredient = recipeIngredient.ingredient;
 
@@ -35,10 +35,24 @@ function calculateFallbackMacros(recipe: Recipe): Macros | null {
     },
     { calories: 0, protein: 0, carbohydrates: 0, fat: 0, fibre: 0 },
   );
+
+  if (macroMode === MacroMode.Total) {
+    return totals;
+  }
+
+  const servings = recipe.servings > 0 ? recipe.servings : 1;
+
+  return {
+    calories: totals.calories / servings,
+    protein: totals.protein / servings,
+    carbohydrates: totals.carbohydrates / servings,
+    fat: totals.fat / servings,
+    fibre: totals.fibre / servings,
+  };
 }
 
-function MacroSummary({ recipe }: { recipe: Recipe }) {
-  const macros = recipe.macros ?? calculateFallbackMacros(recipe);
+function MacroSummary({ recipe, macroMode }: { recipe: Recipe; macroMode: MacroMode }) {
+  const macros = recipe.macros ?? calculateFallbackMacros(recipe, macroMode);
 
   if (!macros) {
     return null;
@@ -68,11 +82,15 @@ export default function Home() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [macroMode, setMacroMode] = useState<MacroMode>(MacroMode.Total);
 
   useEffect(() => {
     async function loadRecipes() {
+      setIsLoading(true);
+      setError(null);
+
       try {
-        const nextRecipes = await getRecipes();
+        const nextRecipes = await getRecipes(macroMode);
         setRecipes(nextRecipes);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Failed to fetch recipes");
@@ -82,7 +100,7 @@ export default function Home() {
     }
 
     loadRecipes();
-  }, []);
+  }, [macroMode]);
 
   if (isLoading) {
     return <main className="mx-auto max-w-3xl px-6 py-10">Loading recipes...</main>;
@@ -95,8 +113,29 @@ export default function Home() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
       <header className="mb-8 border-b border-gray-200 pb-4">
-        <h1 className="text-3xl font-semibold text-gray-950">Recipes</h1>
-        <p className="mt-2 text-sm text-gray-600">{recipes.length} saved recipes</p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold text-gray-950">Recipes</h1>
+            <p className="mt-2 text-sm text-gray-600">{recipes.length} saved recipes</p>
+          </div>
+
+          <div className="inline-flex rounded-md border border-gray-300 bg-white p-1 text-sm font-medium">
+            <button
+              type="button"
+              className={`rounded px-3 py-1.5 ${macroMode === MacroMode.Total ? "bg-gray-950 text-white" : "text-gray-600"}`}
+              onClick={() => setMacroMode(MacroMode.Total)}
+            >
+              Total
+            </button>
+            <button
+              type="button"
+              className={`rounded px-3 py-1.5 ${macroMode === MacroMode.PerServing ? "bg-gray-950 text-white" : "text-gray-600"}`}
+              onClick={() => setMacroMode(MacroMode.PerServing)}
+            >
+              Per serving
+            </button>
+          </div>
+        </div>
       </header>
 
       {recipes.length === 0 ? (
@@ -107,14 +146,15 @@ export default function Home() {
             <li key={recipe.id} className="border-b border-gray-200 pb-5 last:border-b-0">
               <div className="flex items-start justify-between gap-4">
                 <h2 className="text-xl font-medium text-gray-950">{recipe.name}</h2>
-                <span className="shrink-0 text-sm text-gray-500">
-                  {recipe.timeToCompleteMinutes} min
-                </span>
+                <div className="shrink-0 text-right text-sm text-gray-500">
+                  <div>{recipe.timeToCompleteMinutes} min</div>
+                  <div>{recipe.servings} servings</div>
+                </div>
               </div>
 
               <p className="mt-2 text-gray-700">{recipe.instructions}</p>
 
-              <MacroSummary recipe={recipe} />
+              <MacroSummary recipe={recipe} macroMode={macroMode} />
 
               {recipe.ingredients && recipe.ingredients.length > 0 ? (
                 <ul className="mt-3 space-y-1 text-sm text-gray-700">

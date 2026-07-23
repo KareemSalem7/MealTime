@@ -8,9 +8,8 @@ public class PerServingMacroCalculator implements MacroCalculator {
 
     private final MacroCalculator baseCalculator;
 
-    // calculate the macros using the existing
-    public PerServingMacroCalculator() {
-        this.baseCalculator = new BasicMacroCalculator();
+    public PerServingMacroCalculator(BasicMacroCalculator baseCalculator) {
+        this.baseCalculator = baseCalculator;
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.salemapplications.Ingredient.IngredientRepository;
 import com.salemapplications.MacroCalculator;
 import com.salemapplications.Macros;
 import com.salemapplications.RecipeIngredient.RecipeIngredient;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,16 +14,21 @@ public class RecipeService {
 
     private final RecipeRepository recipeRepository;
     private final IngredientRepository ingredientRepository;
-    private final MacroCalculator macroCalculator;
+    private final MacroCalculator totalMacroCalculator;
+    private final MacroCalculator perServingMacroCalculator;
 
+    // we use qualifier to tell spring to inject the basicMacroCalculator bean for totalMacroCalculator, and
+    // the perServingCalculator for perServingMacroCalculator
     public RecipeService(
             RecipeRepository recipeRepository,
             IngredientRepository ingredientRepository,
-            MacroCalculator macroCalculator
+            @Qualifier("basicMacroCalculator") MacroCalculator totalMacroCalculator,
+            @Qualifier("perServingCalculator") MacroCalculator perServingMacroCalculator
     ) {
         this.recipeRepository = recipeRepository;
         this.ingredientRepository = ingredientRepository;
-        this.macroCalculator = macroCalculator;
+        this.totalMacroCalculator = totalMacroCalculator;
+        this.perServingMacroCalculator = perServingMacroCalculator;
     }
 
     // basically gets all recipe objects and returns them in a list
@@ -31,9 +37,11 @@ public class RecipeService {
         return recipeRepository.findAll();
     }
 
-    public List<RecipeResponse> getRecipesWithMacros() {
+    public List<RecipeResponse> getRecipesWithMacros(boolean perServing) {
+        MacroCalculator calculator = selectMacroCalculator(perServing);
+
         return recipeRepository.findAll().stream()
-                .map(recipe -> new RecipeResponse(recipe, macroCalculator.calculate(recipe)))
+                .map(recipe -> new RecipeResponse(recipe, calculator.calculate(recipe)))
                 .toList();
     }
 
@@ -52,11 +60,11 @@ public class RecipeService {
         return recipeRepository.findById(id).get();
     }
 
-    public RecipeResponse getRecipeWithMacrosById(Integer id) {
+    public RecipeResponse getRecipeWithMacrosById(Integer id, boolean perServing) {
         Recipe recipe = recipeRepository.findById(id)
                 .orElseThrow(() -> new RecipeNotFoundException(id));
 
-        return new RecipeResponse(recipe, macroCalculator.calculate(recipe));
+        return new RecipeResponse(recipe, selectMacroCalculator(perServing).calculate(recipe));
     }
 
     public Recipe updateRecipe(Integer id, Recipe updatedRecipe) {
@@ -115,7 +123,13 @@ public class RecipeService {
                 .orElseThrow(() ->
                         new RecipeNotFoundException(recipeId));
 
-        return macroCalculator.calculate(recipe);
+        return totalMacroCalculator.calculate(recipe);
+    }
+
+    // if the per serving option is selected, use the perServingMacroCalculator implementation
+    // otherwise, use the
+    private MacroCalculator selectMacroCalculator(boolean perServing) {
+        return perServing ? perServingMacroCalculator : totalMacroCalculator;
     }
 
 }
